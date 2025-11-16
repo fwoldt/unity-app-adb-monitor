@@ -1,5 +1,6 @@
 export const CONFIG = {
   PACKAGE: process.env.PACKAGE || "io.unitynodes.unityapp",
+  SERVICE_NAME: process.env.SERVICE_NAME || "io.unitynodes.unityapp/expo.modules.pow.PowService",
   REFRESH_INTERVAL: parseInt(process.env.REFRESH_INTERVAL, 10) || 60, // seconds
   
   // Logging configuration
@@ -16,7 +17,15 @@ export const CONFIG = {
   
   // Max log file size before warning (in bytes)
   MAX_LOG_FILE_SIZE: parseInt(process.env.MAX_LOG_FILE_SIZE, 10) || 10 * 1024 * 1024, // 10MB
-  
+  // Portion of newest data to retain when trimming (0-1). Defaults to 0.5 (keep last 50%).
+  LOG_TRIM_RETAIN_RATIO: (() => {
+    const v = parseFloat(process.env.LOG_TRIM_RETAIN_RATIO);
+    return (isNaN(v) || v <= 0 || v >= 1) ? 0.5 : v;
+  })(),
+  // Enable or disable automatic trimming when exceeding MAX_LOG_FILE_SIZE
+  ENABLE_LOG_TRIMMING: process.env.ENABLE_LOG_TRIMMING === 'true',
+  // Maximum listeners per WriteStream to avoid Node warnings
+  MAX_STREAM_LISTENERS: parseInt(process.env.MAX_STREAM_LISTENERS, 10) || 20,
   // Telegram notifications with global cooldown
   TELEGRAM: {
     enabled: process.env.ENABLE_TELEGRAM === "true" || true,

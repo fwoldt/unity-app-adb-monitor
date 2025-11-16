@@ -22,6 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PACKAGE = CONFIG.PACKAGE;
+const SERVICE_NAME = CONFIG.SERVICE_NAME;
 const REFRESH_INTERVAL = CONFIG.REFRESH_INTERVAL;
 
 let previousStatus = {};
@@ -70,38 +71,77 @@ function elapsedTimeToTimestamp(etime) {
   return new Date(Date.now()-totalMs).toLocaleString();
 }
 
-function getProcessInfo(deviceId) {
-  const pid = adbExec(ADB_COMMANDS.PIDOF(deviceId, PACKAGE));
+function getServiceStatus(deviceId) {
+  // Get full dumpsys output for the specific service
+  const cmd = `adb -s ${deviceId} shell "dumpsys activity services ${SERVICE_NAME}"`;
+  const output = adbExec(cmd);
   
-  // Return early if no PID (app not running or command failed)
-  if (!pid || pid.trim() === '') {
-    logger.debug(`No PID found for ${PACKAGE} on device ${deviceId} - app not running`);
-    return { running: false, pidCheckFailed: true };
+  // Return early if no output or command failed
+  if (!output || output.trim() === '') {
+    logger.debug(`No service info for ${SERVICE_NAME} on device ${deviceId}`);
+    return { running: false, serviceCheckFailed: true };
   }
   
-  const memInfoRaw = adbExec(ADB_COMMANDS.MEMINFO(deviceId, PACKAGE));
-  const psRaw = adbExec(ADB_COMMANDS.PS(deviceId, pid));
-
+  // Check if service record exists (output starts with "ACTIVITY MANAGER SERVICES")
+  if (!output.includes('ACTIVITY MANAGER SERVICES')) {
+    logger.debug(`Invalid dumpsys output for ${SERVICE_NAME} on device ${deviceId}`);
+    return { running: false, serviceCheckFailed: true };
+  }
+  
+  // Check if service is registered (has ServiceRecord)
+  if (!output.includes('ServiceRecord')) {
+    logger.debug(`Service ${SERVICE_NAME} not found on device ${deviceId}`);
+    return { running: false, serviceCheckFailed: true };
+  }
+  
+  // Check if service is running by looking for app=ProcessRecord in output
+  // Format: app=ProcessRecord{HASH PID:PROCESSNAME/UID}
+  const appMatch = output.match(/app=ProcessRecord\{[^\s]+\s+(\d+):/);
+  const running = !!appMatch;
+  
+  if (!running) {
+    logger.debug(`Service ${SERVICE_NAME} exists but not running (no ProcessRecord) on device ${deviceId}`);
+    return { running: false, serviceCheckFailed: true };
+  }
+  
+  // Extract PID from ProcessRecord
+  const pid = appMatch[1];
+  
+  // Extract package name
+  const packageMatch = output.match(/packageName=([^\s]+)/);
+  const packageName = packageMatch ? packageMatch[1] : null;
+  
+  // Extract service timing information
+  const createTimeMatch = output.match(/createTime=([^\s]+)/);
+  const lastActivityMatch = output.match(/lastActivity=([^\s]+)/);
+  const restartTimeMatch = output.match(/restartTime=([^\s]+)/);
+  
+  const createTime = createTimeMatch ? createTimeMatch[1] : null;
+  const lastActivity = lastActivityMatch ? lastActivityMatch[1] : null;
+  const restartTime = restartTimeMatch ? restartTimeMatch[1] : null;
+  
+  // Get memory info using the package name
   let pss = null, rss = null;
-  const pssMatch = memInfoRaw.match(/TOTAL PSS:\s+(\d+)/);
-  const rssMatch = memInfoRaw.match(/TOTAL RSS:\s+(\d+)/);
-  if (pssMatch) pss = parseInt(pssMatch[1]);
-  if (rssMatch) rss = parseInt(rssMatch[1]);
-
-  let cpu = null, uid = null, user = null, startTime = null, rss_ps = null;
-  const psLines = psRaw.split("\n").slice(1);
-  if (psLines.length > 0) {
-    const parts = psLines[0].trim().split(/\s+/);
-    if (parts.length >= 6) {
-      uid = parts[1];
-      user = parts[2];
-      cpu = parts[4];
-      rss_ps = parts[5];
-      startTime = elapsedTimeToTimestamp(parts[3]);
-    }
+  if (pid && packageName) {
+    const memInfoRaw = adbExec(ADB_COMMANDS.MEMINFO(deviceId, packageName));
+    const pssMatch = memInfoRaw.match(/TOTAL PSS:\s+(\d+)/);
+    const rssMatch = memInfoRaw.match(/TOTAL RSS:\s+(\d+)/);
+    if (pssMatch) pss = parseInt(pssMatch[1]);
+    if (rssMatch) rss = parseInt(rssMatch[1]);
   }
 
-  return { running: true, pid, pss, rss, rss_ps, cpu, uid, user, startTime };
+  return { 
+    running: true, 
+    pid, 
+    pss, 
+    rss, 
+    serviceName: SERVICE_NAME,
+    packageName,
+    createTime,
+    lastActivity,
+    restartTime,
+    serviceCheckFailed: false 
+  };
 }
 
 function getAppVersion(deviceId){
@@ -283,7 +323,7 @@ async function stopLogcat(deviceId) {
 // Write crash log entry with error handling and send Telegram notification
 async function writeCrashLog(deviceId, deviceName, event, deviceInfo = {}) {
   const logFile = getDeviceCrashLogFile(deviceId);
-  const entry = `[${new Date().toISOString()}] App ${PACKAGE} ${event} on ${deviceName}\n`;
+  const entry = `[${new Date().toISOString()}] Service ${SERVICE_NAME} ${event} on ${deviceName}\n`;
   try {
     await fsPromises.appendFile(logFile, entry, 'utf8');
     logger.info(`Crash log entry written for ${deviceId}: ${event}`);
@@ -309,14 +349,14 @@ app.get("/status", async (req, res) => {
     const statusPromises = devices.map(async (id) => {
       const deviceName = getDeviceName(id);
       const deviceIP = id.includes(":") ? id.split(":")[0] : id;
-      const deviceInfo = { ...getProcessInfo(id), ...getAppVersion(id), device: id, name: deviceName, ip: deviceIP };
+      const deviceInfo = { ...getServiceStatus(id), ...getAppVersion(id), device: id, name: deviceName, ip: deviceIP };
 
       const prev = previousStatus[id];
 
-      // PID CHECK FAILED - log if PID command returned null/empty
-      if (deviceInfo.pidCheckFailed && (!prev || !prev.pidCheckFailed)) {
-        await writeCrashLog(id, deviceName, 'PID_CHECK_FAILED - app not running or ADB command failed');
-        logger.warn(`PID check failed for ${deviceName} (${id})`);
+      // SERVICE CHECK FAILED - log if service is not running
+      if (deviceInfo.serviceCheckFailed && (!prev || !prev.serviceCheckFailed)) {
+        await writeCrashLog(id, deviceName, `SERVICE_CHECK_FAILED - ${SERVICE_NAME} not active or command failed`);
+        logger.warn(`Service ${SERVICE_NAME} check failed for ${deviceName} (${id})`);
       }
 
       // STOPPED - only log if we have previous state and it was running
@@ -390,11 +430,20 @@ app.post('/restart-app', (req, res) => {
     return res.status(400).json({ message: 'Device ID is required.' });
   }
 
-  const command = ADB_COMMANDS.RESTART(deviceId);
   try {
-    adbExec(command);
+    // First, force stop the app
+    const forceStopCmd = ADB_COMMANDS.FORCE_STOP(deviceId, PACKAGE);
+    logger.info(`Force stopping app on ${deviceId}: ${forceStopCmd}`);
+    adbExec(forceStopCmd);
+    
+    // Then, start the app
+    const startCmd = ADB_COMMANDS.START_APP(deviceId, PACKAGE);
+    logger.info(`Starting app on ${deviceId}: ${startCmd}`);
+    adbExec(startCmd);
+    
     res.json({ message: `App on device ${deviceId} restarted successfully.` });
   } catch (error) {
+    logger.error(`Failed to restart app on ${deviceId}: ${error.message}`);
     res.status(500).json({ message: 'Failed to restart app.', error: error.message });
   }
 });

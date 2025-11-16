@@ -21,6 +21,7 @@ export class LogStreamManager {
   getStream(deviceId, filePath) {
     if (!this.streams.has(deviceId)) {
       const stream = fs.createWriteStream(filePath, { flags: 'a', encoding: 'utf8' });
+      stream.setMaxListeners(CONFIG.MAX_STREAM_LISTENERS);
       
       stream.on('error', (err) => {
         logger.error(`Write stream error for device ${deviceId}: ${err.message}`);
@@ -90,10 +91,61 @@ export class LogStreamManager {
     try {
       const stats = await fsPromises.stat(streamInfo.filePath);
       if (stats.size > CONFIG.MAX_LOG_FILE_SIZE) {
-        logger.warn(`Log file for device ${deviceId} exceeds ${CONFIG.MAX_LOG_FILE_SIZE} bytes (current: ${stats.size} bytes)`);
+        if (CONFIG.ENABLE_LOG_TRIMMING) {
+          logger.warn(`Log file for device ${deviceId} exceeds ${CONFIG.MAX_LOG_FILE_SIZE} bytes (current: ${stats.size} bytes). Trimming enabled.`);
+          await this.trimLogFile(deviceId, streamInfo, stats.size);
+        } else {
+          logger.warn(`Log file for device ${deviceId} exceeds ${CONFIG.MAX_LOG_FILE_SIZE} bytes (current: ${stats.size} bytes). Trimming disabled.`);
+        }
       }
     } catch (err) {
       logger.error(`Failed to check file size for device ${deviceId}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Trim a log file keeping only the most recent portion defined by LOG_TRIM_RETAIN_RATIO.
+   * Safely closes existing stream, rewrites file, and reopens stream for continued writes.
+   * @param {string} deviceId - Device identifier
+   * @param {object} streamInfo - Current stream info
+   * @param {number} currentSize - Current file size in bytes
+   */
+  async trimLogFile(deviceId, streamInfo, currentSize) {
+    const retainRatio = CONFIG.LOG_TRIM_RETAIN_RATIO;
+    const targetRetainSize = Math.max(1, Math.floor(CONFIG.MAX_LOG_FILE_SIZE * retainRatio));
+    const filePath = streamInfo.filePath;
+
+    try {
+      // Close current stream before manipulating file
+      await new Promise(resolve => streamInfo.stream.end(resolve));
+
+      const startPos = Math.max(0, currentSize - targetRetainSize);
+      const tempPath = filePath + '.tmp';
+
+      await new Promise((resolve, reject) => {
+        const rs = fs.createReadStream(filePath, { start: startPos });
+        const ws = fs.createWriteStream(tempPath, { flags: 'w', encoding: 'utf8' });
+        rs.on('error', reject);
+        ws.on('error', reject);
+        ws.on('finish', resolve);
+        rs.pipe(ws);
+      });
+
+      await fsPromises.rename(tempPath, filePath);
+
+      // Reopen stream for appending
+      const newStream = fs.createWriteStream(filePath, { flags: 'a', encoding: 'utf8' });
+      newStream.on('error', (err) => {
+        logger.error(`Reopened stream error for device ${deviceId}: ${err.message}`);
+      });
+
+      streamInfo.stream = newStream;
+      streamInfo.bytesWritten = targetRetainSize;
+      streamInfo.lastCheck = Date.now();
+
+      logger.info(`Trimmed log file for device ${deviceId}. Retained last ${targetRetainSize} bytes (ratio ${retainRatio}).`);
+    } catch (err) {
+      logger.error(`Failed trimming log file for device ${deviceId}: ${err.message}`);
     }
   }
 

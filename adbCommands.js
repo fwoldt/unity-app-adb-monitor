@@ -6,5 +6,6 @@ export const ADB_COMMANDS = {
   KILL: (deviceId, pid) => `adb -s ${deviceId} shell kill -9 ${pid}`,
   PACKAGE_INFO: (deviceId, packageName) => `adb -s ${deviceId} shell dumpsys package ${packageName}`,
   GETPROP: (deviceId, prop) => `adb -s ${deviceId} shell getprop ${prop}`,
-  RESTART: (deviceId) => `adb -s ${deviceId} shell am start -S -n com.unitynetwork.unityapp/com.unitynetwork.unityapp.MainActivity`
+  FORCE_STOP: (deviceId, packageName) => `adb -s ${deviceId} shell am force-stop ${packageName}`,
+  START_APP: (deviceId, packageName) => `adb -s ${deviceId} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`
 };

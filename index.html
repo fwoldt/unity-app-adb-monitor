@@ -84,10 +84,9 @@
         <th>Status</th>
         <th>PID</th>
         <th>Memory PSS/RSS (KB)</th>
-        <th>CPU (%)</th>
-        <th>UID</th>
-        <th>User</th>
-        <th>Start Time</th>
+        <th>Create Time</th>
+        <th>Last Activity</th>
+        <th>Restart Time</th>
         <th>Version Name</th>
         <th>Version Code</th>
         <th>Crash Logs</th>
@@ -135,10 +134,9 @@
       <td>${d.running ? "Running" : "Stopped"}</td>
       <td>${d.pid || '-'}</td>
       <td>${d.pss || '-'} / ${d.rss || '-'}</td>
-      <td>${d.cpu || '-'}</td>
-      <td>${d.uid || '-'}</td>
-      <td>${d.user || '-'}</td>
-      <td>${d.startTime || '-'}</td>
+      <td>${d.createTime || '-'}</td>
+      <td>${d.lastActivity || '-'}</td>
+      <td>${d.restartTime || '-'}</td>
       <td>${d.versionName || '-'}</td>
       <td>${d.versionCode || '-'}</td>
       <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', false)">View Logs</button></td>
