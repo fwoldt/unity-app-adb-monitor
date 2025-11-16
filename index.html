@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Unity App Monitor</title>
+  <link rel="icon" href="./images/favicon.png" type="image/x-icon">
+  <style>
+    @font-face {
+      font-family: 'D-DIN Expanded';
+      src: url('https://example.com/fonts/D-DIN-Expanded-Regular.woff2') format('woff2');
+    }
+
+    @font-face {
+      font-family: 'GT Walsheim Pro';
+      src: url('https://example.com/fonts/GT-Walsheim-Pro-Regular.woff2') format('woff2');
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+      font-family: 'GT Walsheim Pro', sans-serif;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #eee;
+    }
+
+    #logWindow {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 10%;
+      width: 80%;
+      height: 70%;
+      background: #fff;
+      border: 2px solid #333;
+      padding: 20px;
+      overflow: auto;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #logWindow button {
+      float: right;
+    }
+
+    #statusHeader {
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-family: 'D-DIN Expanded', sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Unity App Monitor
+    <span style="font-size: 16px; margin-left: 20px;">Last Data Retrieved: <span id="lastRetrieved">--</span> |
+      Next Refresh In: <span id="nextRefresh">--</span> seconds</span>
+  </h1>
+
+  <table id="deviceTable">
+    <thead>
+      <tr>
+        <th>Device Name</th>
+        <th>Device IP</th>
+        <th>Status</th>
+        <th>PID</th>
+        <th>Memory PSS/RSS (KB)</th>
+        <th>CPU (%)</th>
+        <th>UID</th>
+        <th>User</th>
+        <th>Start Time</th>
+        <th>Version Name</th>
+        <th>Version Code</th>
+        <th>Crash Logs</th>
+        <th>App Logs</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Log Window -->
+  <div id="logWindow">
+    <button onclick="closeLogWindow()">Close</button>
+    <h3 id="logTitle"></h3>
+    <pre id="logContent" style="white-space: pre-wrap;"></pre>
+    <button onclick="closeLogWindow()" style="margin-top: 10px;">Close</button>
+  </div>
+
+  <script>
+    const REFRESH_INTERVAL = 60;
+    let countdown = REFRESH_INTERVAL;
+
+    // Fetch status from server
+    async function fetchStatus() {
+      try {
+        const res = await fetch('http://localhost:3000/status');
+        const data = await res.json();
+        updateTable(data);
+        document.getElementById('lastRetrieved').textContent = new Date().toLocaleString();
+        countdown = REFRESH_INTERVAL;
+      } catch (err) {
+        console.error("Failed to fetch status:", err);
+      }
+    }
+
+    // Update table rows
+    function updateTable(devices) {
+      const tbody = document.querySelector('#deviceTable tbody');
+      tbody.innerHTML = '';
+      devices.forEach(d => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+      <td title="${d.name || d.device}">${d.name || d.device}</td>
+      <td>${d.device.split(':')[0]}</td>
+      <td>${d.running ? "Running" : "Stopped"}</td>
+      <td>${d.pid || '-'}</td>
+      <td>${d.pss || '-'} / ${d.rss || '-'}</td>
+      <td>${d.cpu || '-'}</td>
+      <td>${d.uid || '-'}</td>
+      <td>${d.user || '-'}</td>
+      <td>${d.startTime || '-'}</td>
+      <td>${d.versionName || '-'}</td>
+      <td>${d.versionCode || '-'}</td>
+      <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', false)">View Logs</button></td>
+      <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', true)">App Logs</button></td>
+      <td><button onclick="restartAppFromTable('${d.pid}', '${d.device}')">Restart App</button></td>
+    `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Countdown for next refresh
+    function startCountdown() {
+      setInterval(() => {
+        countdown--;
+        if (countdown < 0) countdown = 0;
+        document.getElementById('nextRefresh').textContent = countdown;
+      }, 1000);
+    }
+
+    // View logs
+    async function viewLogs(deviceId, deviceName, isAppLog = false) {
+      try {
+        const endpoint = isAppLog ? 'applogs' : 'logs';
+        const res = await fetch(`http://localhost:3000/${endpoint}/${encodeURIComponent(deviceId)}`);
+        const text = res.ok ? await res.text() : "No logs available.";
+        document.getElementById("logTitle").textContent = isAppLog ? `App Logs for ${deviceName}` : `Crash Logs for ${deviceName}`;
+        document.getElementById("logContent").textContent = text;
+        document.getElementById("logWindow").style.display = "block";
+      } catch (err) {
+        alert("Failed to fetch logs.");
+      }
+    }
+
+    function closeLogWindow() {
+      document.getElementById("logWindow").style.display = "none";
+    }
+
+    // Restart app from table button
+    async function restartAppFromTable(pid, deviceId) {
+      if (!pid || !deviceId) {
+        alert('Missing PID or Device ID for restart.');
+        return;
+      }
+
+      const url = `/restart-app?deviceId=${encodeURIComponent(deviceId)}`;
+      console.log(`Restarting app with URL: ${url}`);
+
+      fetch(url, { method: 'POST' })
+        .then(response => response.json())
+        .then(result => {
+          alert(result.message);
+          fetchStatus(); // Refresh status after restart
+        })
+        .catch(error => {
+          alert('Failed to restart app: ' + error.message);
+        });
+    }
+
+    // Initial fetch and periodic refresh
+    fetchStatus();
+    setInterval(fetchStatus, REFRESH_INTERVAL * 1000);
+    startCountdown();
+  </script>
+
+</body>
+
+</html>

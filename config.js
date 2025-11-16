@@ -1,0 +1,32 @@
+export const CONFIG = {
+  PACKAGE: process.env.PACKAGE || "io.unitynodes.unityapp",
+  REFRESH_INTERVAL: parseInt(process.env.REFRESH_INTERVAL, 10) || 60, // seconds
+  
+  // Logging configuration
+  LOG_FILTER: {
+    // Filter pattern for logcat logs (string or regex pattern)
+    pattern: process.env.LOG_FILTER_PATTERN || "ExpoPowService",
+    // Whether to use regex matching (true) or simple string contains (false)
+    useRegex: process.env.LOG_FILTER_USE_REGEX === "true" || false,
+    // Additional tags to filter (comma-separated)
+    tags: process.env.LOG_FILTER_TAGS?.split(",").map(t => t.trim()).filter(Boolean) || [],
+    // Minimum log level to capture (V=Verbose, D=Debug, I=Info, W=Warn, E=Error, F=Fatal)
+    minLevel: process.env.LOG_MIN_LEVEL || "V"
+  },
+  
+  // Max log file size before warning (in bytes)
+  MAX_LOG_FILE_SIZE: parseInt(process.env.MAX_LOG_FILE_SIZE, 10) || 10 * 1024 * 1024, // 10MB
+  
+  // Telegram notifications with global cooldown
+  TELEGRAM: {
+    enabled: process.env.ENABLE_TELEGRAM === "true" || true,
+    botToken: process.env.TELEGRAM_BOT_TOKEN || "xxx",
+    chatId: process.env.TELEGRAM_CHAT_ID || "xxx",
+    // Global cooldown in milliseconds - applies to all devices (default: 5 minutes)
+    // Messages are buffered during cooldown and sent in batch when cooldown expires
+    notificationCooldown: parseInt(process.env.NOTIFICATION_COOLDOWN, 10) || 0 * 60 * 1000,
+    // Retry settings
+    maxRetries: parseInt(process.env.TELEGRAM_MAX_RETRIES, 10) || 3,
+    retryDelay: parseInt(process.env.TELEGRAM_RETRY_DELAY, 10) || 2000,
+  }
+};
