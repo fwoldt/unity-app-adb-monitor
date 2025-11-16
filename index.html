@@ -81,14 +81,14 @@
       <tr>
         <th>Device Name</th>
         <th>Device IP</th>
-        <th>Status</th>
+        <th>Service Status</th>
         <th>PID</th>
         <th>Memory PSS/RSS (KB)</th>
-        <th>Create Time</th>
-        <th>Last Activity</th>
-        <th>Restart Time</th>
-        <th>Version Name</th>
-        <th>Version Code</th>
+        <th>Service Create Time</th>
+        <th>Service Last Activity</th>
+        <th>Service Restart Time</th>
+        <th>App Version Name</th>
+        <th>App Version Code</th>
         <th>Crash Logs</th>
         <th>App Logs</th>
         <th>Actions</th>
@@ -173,6 +173,17 @@
     function closeLogWindow() {
       document.getElementById("logWindow").style.display = "none";
     }
+
+    // Close log window when clicking outside
+    document.addEventListener("click", function(event) {
+      const logWindow = document.getElementById("logWindow");
+      if (logWindow.style.display === "block" && !logWindow.contains(event.target)) {
+        // Check if click was not on a "View Logs" or "App Logs" button
+        if (!event.target.textContent.includes("Logs")) {
+          closeLogWindow();
+        }
+      }
+    });
 
     // Restart app from table button
     async function restartAppFromTable(pid, deviceId) {

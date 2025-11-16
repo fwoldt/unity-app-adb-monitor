@@ -1,74 +1,44 @@
-# Unity App ADB Monitor (Simplified)
+# Unity App ADB Monitor
 
-Monitors an Android app across all connected `adb` devices, logs start/stop events, collects filtered logcat output, and can send optional Telegram alerts.
-
-## What It Does
-- Lists devices and checks if the target package is running.
-- Records lifecycle events: `STARTED`, `STOPPED`, `PID_CHECK_FAILED`.
-- Writes two per‑device files: crash log (events) and app log (filtered lines).
-- Restarts logcat automatically if the app PID changes.
-- Optional Telegram notifications with a global cooldown and buffering.
+Web dashboard for monitoring Android apps across multiple ADB devices. Shows service status, memory usage, logs, and allows app restarts.
 
 ## Quick Start
 ```powershell
 npm install
-$env:PACKAGE = "io.unitynodes.unityapp"  # or your package
 node server.js
 # Open http://localhost:3000
 ```
 
-## Minimal Config (env vars)
-| Var | Purpose | Default |
-|-----|---------|---------|
-| PACKAGE | Package to monitor | io.unitynodes.unityapp |
-| LOG_FILTER_PATTERN | Log line match pattern | ExpoPowService |
-| ENABLE_TELEGRAM | Enable Telegram alerts | false |
-| TELEGRAM_BOT_TOKEN | Bot token | (empty) |
-| TELEGRAM_CHAT_ID | Chat / channel id | (empty) |
-| NOTIFICATION_COOLDOWN | Global cooldown ms | 300000 |
+## Main Features
+- Monitor Android service status across all connected devices
+- View PID, memory (PSS/RSS), and timing info
+- Restart app with one click
+- Auto-refresh status display
+- Optional Telegram alerts
 
-Set any variable with `$env:NAME = "value"` before `node server.js`.
-
-## Core Endpoints
-| Method | Path | Use |
-|--------|------|-----|
-| GET | /status | Current state per device |
-| GET | /logs/:deviceId | Crash log events |
-| GET | /applogs/:deviceId | Filtered app log |
-| POST | /restart-app?deviceId=ID | Restart monitored app |
-| GET | /telegram/status | Telegram status |
-| POST | /telegram/test | Test alert |
-
-## Telegram (Optional)
-Enable by setting `ENABLE_TELEGRAM=true`, plus bot token & chat id. Alerts change icon/title for STARTED vs STOPPED. During cooldown, events are buffered then flushed in batch.
-
-## Files Generated
-`<device>-crash-log.txt` – lifecycle events.
-`<device>-app-log.txt` – filtered logcat lines.
-
-## Restart Example
+## Key Configuration
 ```powershell
-Invoke-RestMethod -Method POST "http://localhost:3000/restart-app?deviceId=DEVICE_ID"
+$env:PACKAGE = "io.unitynodes.unityapp"
+$env:SERVICE_NAME = "io.unitynodes.unityapp/expo.modules.pow.PowService"
+$env:LOG_LEVEL = "debug"  # For troubleshooting
+node server.js
 ```
 
-## Basic Troubleshooting
-| Issue | Fix |
-|-------|-----|
-| No devices | Check `adb devices` output / connections |
-| Wrong package | Set `PACKAGE` env var correctly |
-| No Telegram alerts | Verify token, chat id, enabled flag |
-| Many PID_CHECK_FAILED | App not installed / package mismatch |
+Common settings:
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| PACKAGE | io.unitynodes.unityapp | Package to monitor |
+| SERVICE_NAME | io.unitynodes.unityapp/expo.modules.pow.PowService | Full service name |
+| REFRESH_INTERVAL | 60 | Refresh interval (seconds) |
+| LOG_FILTER_PATTERN | ExpoPowService | Filter logcat by pattern |
+| ENABLE_TELEGRAM | false | Enable notifications |
 
-## Extend Ideas
-- Add battery stats endpoint (`dumpsys batterystats`).
-- Rotate logs by size.
-- Add WebSocket for live updates.
-
-## Test Snippets
+## Telegram Alerts (Optional)
 ```powershell
-Invoke-RestMethod http://localhost:3000/status | ConvertTo-Json -Depth 3
-Invoke-RestMethod http://localhost:3000/telegram/status | ConvertTo-Json
+$env:ENABLE_TELEGRAM = "true"
+$env:TELEGRAM_BOT_TOKEN = "your_token"
+$env:TELEGRAM_CHAT_ID = "your_chat_id"
 ```
 
 ---
-Use responsibly; monitor only apps/devices you are authorized to access.
+Monitor only authorized devices.
