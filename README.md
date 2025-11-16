@@ -12,7 +12,7 @@ Monitors an Android app across all connected `adb` devices, logs start/stop even
 ## Quick Start
 ```powershell
 npm install
-$env:PACKAGE = "com.unitynetwork.unityapp"  # or your package
+$env:PACKAGE = "io.unitynodes.unityapp"  # or your package
 node server.js
 # Open http://localhost:3000
 ```
