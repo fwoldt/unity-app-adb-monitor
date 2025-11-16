@@ -20,7 +20,7 @@ node server.js
 ## Minimal Config (env vars)
 | Var | Purpose | Default |
 |-----|---------|---------|
-| PACKAGE | Package to monitor | com.unitynetwork.unityapp |
+| PACKAGE | Package to monitor | io.unitynodes.unityapp |
 | LOG_FILTER_PATTERN | Log line match pattern | ExpoPowService |
 | ENABLE_TELEGRAM | Enable Telegram alerts | false |
 | TELEGRAM_BOT_TOKEN | Bot token | (empty) |
