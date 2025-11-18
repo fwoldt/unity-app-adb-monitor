@@ -59,6 +59,25 @@
       float: right;
     }
 
+    #testWindow {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 10%;
+      width: 80%;
+      height: 70%;
+      background: #fff;
+      border: 2px solid #333;
+      padding: 20px;
+      overflow: auto;
+      z-index: 1000;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #testWindow button {
+      float: right;
+    }
+
     #statusHeader {
       margin-bottom: 10px;
     }
@@ -81,14 +100,14 @@
       <tr>
         <th>Device Name</th>
         <th>Device IP</th>
-        <th>Service Status</th>
+        <th>Status</th>
         <th>PID</th>
         <th>Memory PSS/RSS (KB)</th>
-        <th>Service Create Time</th>
-        <th>Service Last Activity</th>
-        <th>Service Restart Time</th>
-        <th>App Version Name</th>
-        <th>App Version Code</th>
+        <th>Create Time</th>
+        <th>Last Activity</th>
+        <th>Restart Time</th>
+        <th>Version Name</th>
+        <th>Version Code</th>
         <th>Crash Logs</th>
         <th>App Logs</th>
         <th>Actions</th>
@@ -103,6 +122,36 @@
     <h3 id="logTitle"></h3>
     <pre id="logContent" style="white-space: pre-wrap;"></pre>
     <button onclick="closeLogWindow()" style="margin-top: 10px;">Close</button>
+  </div>
+
+  <!-- Test Window -->
+  <div id="testWindow">
+    <button onclick="closeTestWindow()">Close</button>
+    <h3>UI Automation Tests for <span id="testDeviceName"></span></h3>
+    
+    <div style="margin: 20px 0;">
+      <label for="testSelect" style="margin-right: 10px;">Select Test:</label>
+      <select id="testSelect" style="padding: 5px; margin-right: 10px;">
+        <option value="">-- Select Test --</option>
+      </select>
+      <button onclick="runSelectedTest()" style="padding: 6px 15px; cursor: pointer;">Run Test</button>
+    </div>
+    
+    <!-- Test Results -->
+    <div id="testResults" style="margin-top: 20px; display: none;">
+      <h4>Test Results</h4>
+      <div style="padding: 10px; background: #f5f5f5; border-left: 4px solid #ddd;">
+        <p><strong>Test:</strong> <span id="resultTestName">-</span></p>
+        <p><strong>Status:</strong> <span id="resultStatus">-</span></p>
+        <p><strong>Message:</strong> <span id="resultMessage">-</span></p>
+        <details>
+          <summary style="cursor: pointer; font-weight: bold; margin-top: 10px;">View Details</summary>
+          <pre id="resultDetails" style="white-space: pre-wrap; margin-top: 10px; background: #fff; padding: 10px; border: 1px solid #ddd;">-</pre>
+        </details>
+      </div>
+    </div>
+    
+    <button onclick="closeTestWindow()" style="margin-top: 10px;">Close</button>
   </div>
 
   <script>
@@ -126,6 +175,7 @@
     function updateTable(devices) {
       const tbody = document.querySelector('#deviceTable tbody');
       tbody.innerHTML = '';
+      
       devices.forEach(d => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -141,7 +191,10 @@
       <td>${d.versionCode || '-'}</td>
       <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', false)">View Logs</button></td>
       <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', true)">App Logs</button></td>
-      <td><button onclick="restartAppFromTable('${d.pid}', '${d.device}')">Restart App</button></td>
+      <td>
+        <button onclick="restartAppFromTable('${d.pid}', '${d.device}')">Restart App</button>
+        <button onclick="openTestWindow('${d.device}', '${d.name || d.device}')" style="margin-left: 5px;">Run Tests</button>
+      </td>
     `;
         tbody.appendChild(row);
       });
@@ -172,6 +225,10 @@
 
     function closeLogWindow() {
       document.getElementById("logWindow").style.display = "none";
+    }
+
+    function closeTestWindow() {
+      document.getElementById("testWindow").style.display = "none";
     }
 
     // Close log window when clicking outside
@@ -206,10 +263,84 @@
         });
     }
 
+    // UI Test functions
+    let currentTestDevice = null;
+    let availableTests = [];
+    
+    // Load available tests on page load
+    async function loadUITests() {
+      try {
+        const res = await fetch('http://localhost:3000/ui-test/list');
+        const data = await res.json();
+        availableTests = data.tests;
+      } catch (err) {
+        console.error("Failed to load UI tests:", err);
+      }
+    }
+    
+    // Open test window for specific device
+    function openTestWindow(deviceId, deviceName) {
+      currentTestDevice = deviceId;
+      document.getElementById('testDeviceName').textContent = deviceName;
+      
+      // Populate test dropdown
+      const testSelect = document.getElementById('testSelect');
+      testSelect.innerHTML = '<option value="">-- Select Test --</option>';
+      
+      availableTests.forEach(test => {
+        const option = document.createElement('option');
+        option.value = test.name;
+        option.textContent = `${test.name} (${test.expectedElementsCount} checks)`;
+        testSelect.appendChild(option);
+      });
+      
+      // Hide previous results
+      document.getElementById('testResults').style.display = 'none';
+      
+      // Show window
+      document.getElementById('testWindow').style.display = 'block';
+    }
+    
+    // Run selected test from the window
+    async function runSelectedTest() {
+      const testName = document.getElementById('testSelect').value;
+      
+      if (!testName) {
+        alert('Please select a test');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`http://localhost:3000/ui-test/run/${encodeURIComponent(currentTestDevice)}/${encodeURIComponent(testName)}`, {
+          method: 'POST'
+        });
+        
+        const result = await res.json();
+        
+        // Display results
+        document.getElementById('testResults').style.display = 'block';
+        document.getElementById('resultTestName').textContent = result.testName || testName;
+        document.getElementById('resultStatus').textContent = result.success ? '✓ PASSED' : '✗ FAILED';
+        document.getElementById('resultStatus').style.color = result.success ? 'green' : 'red';
+        document.getElementById('resultStatus').style.fontWeight = 'bold';
+        document.getElementById('resultMessage').textContent = result.message || 'No message';
+        document.getElementById('resultDetails').textContent = (result.details || []).join('\n');
+        
+        // Change border color based on success
+        const resultsDiv = document.querySelector('#testResults > div');
+        resultsDiv.style.borderLeftColor = result.success ? '#4CAF50' : '#f44336';
+        
+      } catch (err) {
+        alert('Failed to run UI test: ' + err.message);
+        console.error(err);
+      }
+    }
+
     // Initial fetch and periodic refresh
     fetchStatus();
     setInterval(fetchStatus, REFRESH_INTERVAL * 1000);
     startCountdown();
+    loadUITests();
   </script>
 
 </body>

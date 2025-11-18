@@ -23,7 +23,7 @@ export const CONFIG = {
     return (isNaN(v) || v <= 0 || v >= 1) ? 0.5 : v;
   })(),
   // Enable or disable automatic trimming when exceeding MAX_LOG_FILE_SIZE
-  ENABLE_LOG_TRIMMING: process.env.ENABLE_LOG_TRIMMING === 'true',
+  ENABLE_LOG_TRIMMING: process.env.ENABLE_LOG_TRIMMING === 'true'||true,
   // Maximum listeners per WriteStream to avoid Node warnings
   MAX_STREAM_LISTENERS: parseInt(process.env.MAX_STREAM_LISTENERS, 10) || 20,
   // Telegram notifications with global cooldown

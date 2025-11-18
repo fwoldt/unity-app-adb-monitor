@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import fsPromises from "fs/promises";
 import { CONFIG } from "./config.js";
+import { UI_TESTS, TEST_ENDPOINTS, TEST_UTILS } from "./tests.config.js";
 import logger from './logger.js';
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -13,6 +14,7 @@ import { ADB_COMMANDS } from "./adbCommands.js";
 import { LineBuffer } from "./LineBuffer.js";
 import { logStreamManager } from "./LogStreamManager.js";
 import { telegramNotifier } from "./TelegramNotifier.js";
+import { dumpUI, findElementByBounds, tapElement, runTestScenario } from "./uiAutomation.js";
 const execAsync = promisify(exec);
 
 const app = express();
@@ -46,15 +48,35 @@ function adbExec(cmd) {
   }
 }
 
+async function adbExecAsync(cmd) {
+  try {
+    const { stdout } = await execAsync(cmd);
+    return stdout.toString().trim();
+  } catch (err) {
+    logger.error(`ADB command failed: ${cmd}`);
+    logger.error(`Error details: ${err.message}`);
+    if (err.stderr) {
+      logger.error(`stderr: ${err.stderr.toString()}`);
+    }
+    if (err.stdout) {
+      logger.debug(`stdout: ${err.stdout.toString()}`);
+    }
+    logger.error(`Exit code: ${err.code || 'unknown'}`);
+    return "";
+  }
+}
+
 function getDevices() {
   const output = adbExec(ADB_COMMANDS.DEVICES);
   const lines = output.split("\n").slice(1).filter(l => l.trim());
   return Array.isArray(lines) ? lines.map(line => line.split("\t")[0]).filter(Boolean) : [];
 }
 
-function getDeviceName(deviceId) {
-  const manufacturer = adbExec(ADB_COMMANDS.GETPROP(deviceId, "ro.product.manufacturer"));
-  const model = adbExec(ADB_COMMANDS.GETPROP(deviceId, "ro.product.model"));
+async function getDeviceName(deviceId) {
+  const [manufacturer, model] = await Promise.all([
+    adbExecAsync(ADB_COMMANDS.GETPROP(deviceId, "ro.product.manufacturer")),
+    adbExecAsync(ADB_COMMANDS.GETPROP(deviceId, "ro.product.model"))
+  ]);
   return `${manufacturer} ${model}`.trim() || deviceId;
 }
 
@@ -71,10 +93,10 @@ function elapsedTimeToTimestamp(etime) {
   return new Date(Date.now()-totalMs).toLocaleString();
 }
 
-function getServiceStatus(deviceId) {
+async function getServiceStatus(deviceId) {
   // Get full dumpsys output for the specific service
   const cmd = `adb -s ${deviceId} shell "dumpsys activity services ${SERVICE_NAME}"`;
-  const output = adbExec(cmd);
+  const output = await adbExecAsync(cmd);
   
   // Return early if no output or command failed
   if (!output || output.trim() === '') {
@@ -123,7 +145,7 @@ function getServiceStatus(deviceId) {
   // Get memory info using the package name
   let pss = null, rss = null;
   if (pid && packageName) {
-    const memInfoRaw = adbExec(ADB_COMMANDS.MEMINFO(deviceId, packageName));
+    const memInfoRaw = await adbExecAsync(ADB_COMMANDS.MEMINFO(deviceId, packageName));
     const pssMatch = memInfoRaw.match(/TOTAL PSS:\s+(\d+)/);
     const rssMatch = memInfoRaw.match(/TOTAL RSS:\s+(\d+)/);
     if (pssMatch) pss = parseInt(pssMatch[1]);
@@ -144,8 +166,8 @@ function getServiceStatus(deviceId) {
   };
 }
 
-function getAppVersion(deviceId){
-  const output = adbExec(ADB_COMMANDS.PACKAGE_INFO(deviceId, PACKAGE));
+async function getAppVersion(deviceId){
+  const output = await adbExecAsync(ADB_COMMANDS.PACKAGE_INFO(deviceId, PACKAGE));
   const codeMatch = output.match(/versionCode=(\d+)\b/);
   const nameMatch = output.match(/versionName=([\S]+)/);
   return { versionCode: codeMatch ? parseInt(codeMatch[1]) : null, versionName: nameMatch ? nameMatch[1] : null };
@@ -347,9 +369,13 @@ app.get("/status", async (req, res) => {
   try {
     const devices = getDevices();
     const statusPromises = devices.map(async (id) => {
-      const deviceName = getDeviceName(id);
+      const deviceName = await getDeviceName(id);
       const deviceIP = id.includes(":") ? id.split(":")[0] : id;
-      const deviceInfo = { ...getServiceStatus(id), ...getAppVersion(id), device: id, name: deviceName, ip: deviceIP };
+      const [serviceStatus, appVersion] = await Promise.all([
+        getServiceStatus(id),
+        getAppVersion(id)
+      ]);
+      const deviceInfo = { ...serviceStatus, ...appVersion, device: id, name: deviceName, ip: deviceIP };
 
       const prev = previousStatus[id];
 
@@ -564,6 +590,60 @@ app.post('/telegram/flush', async (req, res) => {
     logger.error(`Error flushing buffer: ${err.message}`);
     res.status(500).json({ error: 'Internal server error', message: err.message });
   }
+});
+
+// UI Automation endpoints
+
+// Dump UI hierarchy for a device
+app.get('/ui-test/dump/:deviceId', (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const xmlContent = dumpUI(deviceId);
+    
+    res.set('Content-Type', 'text/xml');
+    res.send(xmlContent);
+  } catch (err) {
+    logger.error(`Error dumping UI for device ${req.params.deviceId}: ${err.message}`);
+    res.status(500).json({ error: 'Failed to dump UI', message: err.message });
+  }
+});
+
+// Run a UI test on a device
+app.post('/ui-test/run/:deviceId/:testName', async (req, res) => {
+  try {
+    const { deviceId, testName } = req.params;
+    
+    // Find test scenario by name
+    const testScenario = UI_TESTS.find(t => t.name === testName);
+    
+    if (!testScenario) {
+      return res.status(404).json({ 
+        error: 'Test not found', 
+        message: `No test found with name: ${testName}`,
+        availableTests: UI_TESTS.map(t => t.name)
+      });
+    }
+    
+    // Run the test
+    const result = await runTestScenario(deviceId, testScenario);
+    
+    res.json(result);
+  } catch (err) {
+    logger.error(`Error running UI test: ${err.message}`);
+    res.status(500).json({ error: 'Failed to run UI test', message: err.message });
+  }
+});
+
+// Get list of available UI tests
+app.get('/ui-test/list', (req, res) => {
+  res.json({
+    tests: UI_TESTS.map(t => ({
+      name: t.name,
+      description: t.description,
+      tapBounds: t.tapBounds,
+      expectedElementsCount: t.expectedElements?.length || 0
+    }))
+  });
 });
 
 const server = app.listen(3000, ()=>{
