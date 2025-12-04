@@ -15,6 +15,7 @@ import { LineBuffer } from "./LineBuffer.js";
 import { logStreamManager } from "./LogStreamManager.js";
 import { telegramNotifier } from "./TelegramNotifier.js";
 import { dumpUI, findElementByBounds, tapElement, runTestScenario } from "./uiAutomation.js";
+import { startNetworkDiscovery, stopNetworkDiscovery, getConnectedNetworkDevices } from "./networkDiscovery.js";
 const execAsync = promisify(exec);
 
 const app = express();
@@ -663,6 +664,15 @@ const server = app.listen(3000, ()=>{
   } else {
     logger.info(`Telegram notifications: DISABLED (not configured)`);
   }
+  
+  // Start network discovery if enabled
+  if (CONFIG.NETWORK_DISCOVERY.enabled) {
+    logger.info(`Network discovery: ENABLED for range ${CONFIG.NETWORK_DISCOVERY.ipRange}:${CONFIG.NETWORK_DISCOVERY.adbPort}`);
+    logger.info(`Discovery interval: ${CONFIG.NETWORK_DISCOVERY.discoveryInterval}s`);
+    startNetworkDiscovery();
+  } else {
+    logger.info('Network discovery: DISABLED');
+  }
 });
 
 // Graceful shutdown
@@ -672,6 +682,10 @@ async function gracefulShutdown(signal) {
   // Stop accepting new connections
   server.close(async () => {
     logger.info('HTTP server closed');
+    
+    // Stop network discovery
+    stopNetworkDiscovery();
+    logger.info('Network discovery stopped');
     
     // Stop all logcat processes
     const stopPromises = Object.keys(logcatProcesses).map(deviceId => stopLogcat(deviceId));

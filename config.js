@@ -2,7 +2,7 @@ export const CONFIG = {
   PACKAGE: process.env.PACKAGE || "io.unitynodes.unityapp",
   SERVICE_NAME: process.env.SERVICE_NAME || "io.unitynodes.unityapp/expo.modules.pow.PowService",
   REFRESH_INTERVAL: parseInt(process.env.REFRESH_INTERVAL, 10) || 60, // seconds
-  
+
   // Logging configuration
   LOG_FILTER: {
     // Filter pattern for logcat logs (string or regex pattern)
@@ -14,7 +14,7 @@ export const CONFIG = {
     // Minimum log level to capture (V=Verbose, D=Debug, I=Info, W=Warn, E=Error, F=Fatal)
     minLevel: process.env.LOG_MIN_LEVEL || "V"
   },
-  
+
   // Max log file size before warning (in bytes)
   MAX_LOG_FILE_SIZE: parseInt(process.env.MAX_LOG_FILE_SIZE, 10) || 10 * 1024 * 1024, // 10MB
   // Portion of newest data to retain when trimming (0-1). Defaults to 0.5 (keep last 50%).
@@ -26,6 +26,19 @@ export const CONFIG = {
   ENABLE_LOG_TRIMMING: process.env.ENABLE_LOG_TRIMMING === 'true'||true,
   // Maximum listeners per WriteStream to avoid Node warnings
   MAX_STREAM_LISTENERS: parseInt(process.env.MAX_STREAM_LISTENERS, 10) || 20,
+  // Network device discovery
+  NETWORK_DISCOVERY: {
+    enabled: process.env.ENABLE_NETWORK_DISCOVERY === "true" || true,
+    // IP range to scan for ADB devices (e.g., "192.168.44.1-254")
+    ipRange: process.env.NETWORK_IP_RANGE || "192.168.44.1-254",
+    // ADB port to check
+    adbPort: parseInt(process.env.ADB_PORT, 10) || 5555,
+    // Discovery interval in seconds
+    discoveryInterval: parseInt(process.env.DISCOVERY_INTERVAL, 10) || 300, // 5 minutes
+    // Connection timeout for port checks in milliseconds
+    connectionTimeout: parseInt(process.env.CONNECTION_TIMEOUT, 10) || 2000,
+  },
+
   // Telegram notifications with global cooldown
   TELEGRAM: {
     enabled: process.env.ENABLE_TELEGRAM === "true" || true,
