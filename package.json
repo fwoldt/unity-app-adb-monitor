@@ -12,6 +12,7 @@
     "express": "^4.18.2",
     "fast-xml-parser": "^4.5.0",
     "node-telegram-bot-api": "^0.66.0",
-    "winston": "^3.18.3"
+    "winston": "^3.18.3",
+    "ws": "^8.18.3"
   }
 }

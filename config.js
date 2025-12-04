@@ -39,6 +39,17 @@ export const CONFIG = {
     connectionTimeout: parseInt(process.env.CONNECTION_TIMEOUT, 10) || 2000,
   },
 
+  // Screenshot configuration
+  SCREENSHOTS: {
+    enabled: process.env.ENABLE_SCREENSHOTS === "true" || true,
+    // Screenshot cache duration in seconds
+    cacheDuration: parseInt(process.env.SCREENSHOT_CACHE_DURATION, 10) || 30,
+    // Maximum screenshot width (for optimization)
+    maxWidth: parseInt(process.env.SCREENSHOT_MAX_WIDTH, 10) || 400,
+    // Screenshot quality (1-100)
+    quality: parseInt(process.env.SCREENSHOT_QUALITY, 10) || 70,
+  },
+
   // Telegram notifications with global cooldown
   TELEGRAM: {
     enabled: process.env.ENABLE_TELEGRAM === "true" || true,

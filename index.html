@@ -6,16 +6,6 @@
   <title>Unity App Monitor</title>
   <link rel="icon" href="./images/favicon.png" type="image/x-icon">
   <style>
-    @font-face {
-      font-family: 'D-DIN Expanded';
-      src: url('https://example.com/fonts/D-DIN-Expanded-Regular.woff2') format('woff2');
-    }
-
-    @font-face {
-      font-family: 'GT Walsheim Pro';
-      src: url('https://example.com/fonts/GT-Walsheim-Pro-Regular.woff2') format('woff2');
-    }
-
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
@@ -27,6 +17,223 @@
       width: 100%;
       margin-top: 10px;
       font-family: 'GT Walsheim Pro', sans-serif;
+    }
+
+    .screenshot-cell {
+      text-align: center;
+      padding: 4px;
+      vertical-align: middle;
+      width: 60px;
+    }
+
+    .device-screenshot {
+      max-width: 50px;
+      max-height: 90px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      vertical-align: middle;
+    }
+
+    .device-screenshot:hover {
+      max-width: 200px;
+      max-height: 350px;
+      border-color: #007bff;
+      border-width: 2px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      z-index: 100;
+      position: relative;
+      transform: scale(1);
+    }
+
+    .screenshot-error {
+      color: #666;
+      font-size: 12px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    /* Modal for full-size screenshots */
+    .screenshot-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+    }
+
+    .screenshot-modal-content {
+      margin: 5% auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      max-width: 90%;
+      max-height: 80%;
+      text-align: center;
+    }
+
+    .screenshot-modal img {
+      max-width: 100%;
+      max-height: 70vh;
+      border-radius: 8px;
+    }
+
+    .screenshot-close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .screenshot-close:hover {
+      color: #000;
+    }
+
+    .screenshot-toggle {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 10px;
+      transition: background-color 0.3s;
+    }
+
+    .screenshot-toggle:hover {
+      background: #218838;
+    }
+
+    .screenshot-toggle.disabled {
+      background: #6c757d;
+    }
+
+    .screenshot-toggle.disabled:hover {
+      background: #5a6268;
+    }
+
+    .screenshot-column-hidden {
+      display: none !important;
+    }
+
+    .screenshot-disabled {
+      color: #999;
+      font-size: 11px;
+      padding: 10px;
+      text-align: center;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .actions-cell {
+      padding: 4px !important;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: center;
+    }
+
+    .btn-primary, .btn-secondary, .btn-info, .btn-warning, .btn-danger {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      color: white;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary { background: #007bff; }
+    .btn-primary:hover { background: #0056b3; }
+    .btn-secondary { background: #6c757d; }
+    .btn-secondary:hover { background: #545b62; }
+    .btn-info { background: #17a2b8; }
+    .btn-info:hover { background: #138496; }
+    .btn-warning { background: #ffc107; color: #212529; }
+    .btn-warning:hover { background: #e0a800; }
+    .btn-danger { background: #dc3545; }
+    .btn-danger:hover { background: #c82333; }
+
+    /* Device Actions Modal */
+    .device-actions-modal {
+      display: none;
+      position: fixed;
+      z-index: 1001;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.6);
+    }
+
+    .device-actions-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 600px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .device-actions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .action-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      background: #f8f9fa;
+      transition: box-shadow 0.2s;
+    }
+
+    .action-card:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .action-card h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 16px;
+    }
+
+    .action-card p {
+      margin: 0 0 15px 0;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .batch-actions {
+      margin: 20px 0;
+      padding: 15px;
+      background: #e7f3ff;
+      border-radius: 8px;
+      border-left: 4px solid #007bff;
     }
 
     th,
@@ -85,6 +292,135 @@
     h1 {
       font-family: 'D-DIN Expanded', sans-serif;
     }
+
+    /* Device Management Modal */
+    .device-management-modal {
+      display: none;
+      position: fixed;
+      z-index: 1002;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+    }
+
+    .device-management-content {
+      background-color: white;
+      margin: 2% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 95%;
+      max-width: 1200px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .device-management-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #007bff;
+      padding-bottom: 15px;
+    }
+
+    .device-table-container {
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    .device-management-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .device-management-table th,
+    .device-management-table td {
+      border: 1px solid #ddd;
+      padding: 12px 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .device-management-table th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .device-management-table tbody tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+
+    .device-management-table tbody tr:hover {
+      background-color: #e3f2fd;
+    }
+
+    .device-status-online {
+      color: #28a745;
+      font-weight: bold;
+    }
+
+    .device-status-offline {
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    .unity-input, .box-input {
+      width: 100px;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    
+    .box-header-row {
+      background-color: #f8f9fa !important;
+    }
+    
+    .box-header-row td {
+      font-weight: bold;
+      color: #495057;
+      border-top: 2px solid #007bff !important;
+    }
+
+    .save-unity-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .save-unity-btn:hover {
+      background: #218838;
+    }
+
+    .device-management-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .device-close-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 24px;
+      line-height: 1;
+    }
   </style>
 </head>
 
@@ -93,16 +429,54 @@
   <h1>Unity App Monitor
     <span style="font-size: 16px; margin-left: 20px;">Last Data Retrieved: <span id="lastRetrieved">--</span> |
       Next Refresh In: <span id="nextRefresh">--</span> seconds</span>
+    <button id="screenshotToggle" class="screenshot-toggle" onclick="toggleScreenshots()">📷 Screenshots ON</button>
   </h1>
+
+  <!-- Device Management Bar -->
+  <div class="batch-actions">
+    <h3 style="margin: 0 0 10px 0;">📊 Device Management</h3>
+    <div class="action-buttons">
+      <button onclick="scanDevices()" class="btn-success">🔍 Scan New Devices</button>
+      <button onclick="updateDeviceStatus()" class="btn-info">🔄 Update Status</button>
+      <button onclick="showDeviceList()" class="btn-secondary">📋 Device List</button>
+      <button onclick="showGroupedDevices()" class="btn-info">📦 Group by Box</button>
+      <button onclick="showMissingDevices()" class="btn-warning">❌ Missing Devices</button>
+    </div>
+  </div>
+
+  <!-- CXT Box Management Bar -->
+  <div class="batch-actions">
+    <h3 style="margin: 0 0 10px 0;">📦 CXT PhoneFarm Box Management</h3>
+    <div class="action-buttons">
+      <button onclick="scanBoxes()" class="btn-success">🔍 Scan Boxes</button>
+      <button onclick="connectAllBoxes()" class="btn-info">🔗 Connect All</button>
+      <button onclick="showBoxStatus()" class="btn-secondary">📊 Box Status</button>
+      <button onclick="showBoxSettings()" class="btn-warning">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <!-- Batch Actions Bar -->
+  <div class="batch-actions">
+    <h3 style="margin: 0 0 10px 0;">🚀 Batch Operations (All Devices)</h3>
+    <div class="action-buttons">
+      <button onclick="runBatchAction('battery-100')" class="btn-info">🔋 Battery 100%</button>
+      <button onclick="runBatchAction('unity-stop')" class="btn-warning">⏹️ Stop Unity</button>
+      <button onclick="runBatchAction('unity-restart')" class="btn-primary">🔄 Restart Unity</button>
+      <button onclick="runBatchAction('set-resolution')" class="btn-secondary">📱 Set Resolution</button>
+      <button onclick="runBatchAction('reboot')" class="btn-danger">⚡ Reboot All</button>
+    </div>
+  </div>
 
   <table id="deviceTable">
     <thead>
       <tr>
         <th>Device Name</th>
         <th>Device IP</th>
+        <th title="WiFi MAC Address">MAC Address</th>
+        <th id="screenshotHeader" class="screenshot-column">Screenshot</th>
         <th>Status</th>
         <th>PID</th>
-        <th>Memory PSS/RSS (KB)</th>
+        <th title="PSS: Proportional Set Size - Real memory usage including shared memory portions&#10;RSS: Resident Set Size - Physical memory currently used by the process">Memory PSS/RSS (MB)</th>
         <th>Create Time</th>
         <th>Last Activity</th>
         <th>Restart Time</th>
@@ -178,9 +552,27 @@
       
       devices.forEach(d => {
         const row = document.createElement('tr');
+        // Conditional screenshot cell based on toggle state
+        const screenshotCell = screenshotsEnabled 
+          ? `<td class="screenshot-cell screenshot-column">
+               <img src="/screenshot/${encodeURIComponent(d.device)}" 
+                    alt="Device Screenshot" 
+                    class="device-screenshot"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                    onclick="openScreenshotModal('${encodeURIComponent(d.device)}', '${d.name || d.device}')">
+               <div class="screenshot-error" style="display: none;">
+                 📱 No Screenshot
+               </div>
+             </td>`
+          : `<td class="screenshot-cell screenshot-column screenshot-column-hidden">
+               <div class="screenshot-disabled">📷 Disabled</div>
+             </td>`;
+
         row.innerHTML = `
       <td title="${d.name || d.device}">${d.name || d.device}</td>
       <td>${d.device.split(':')[0]}</td>
+      <td title="${d.macAddress || 'MAC address not available'}">${d.macAddress || '-'}</td>
+      ${screenshotCell}
       <td>${d.running ? "Running" : "Stopped"}</td>
       <td>${d.pid || '-'}</td>
       <td>${d.pss || '-'} / ${d.rss || '-'}</td>
@@ -191,9 +583,13 @@
       <td>${d.versionCode || '-'}</td>
       <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', false)">View Logs</button></td>
       <td><button onclick="viewLogs('${d.device}', '${d.name || d.device}', true)">App Logs</button></td>
-      <td>
-        <button onclick="restartAppFromTable('${d.pid}', '${d.device}')">Restart App</button>
-        <button onclick="openTestWindow('${d.device}', '${d.name || d.device}')" style="margin-left: 5px;">Run Tests</button>
+      <td class="actions-cell">
+        <div class="action-buttons">
+          <button onclick="restartAppFromTable('${d.pid}', '${d.device}')" class="btn-primary">🔄 Restart</button>
+          <button onclick="openTestWindow('${d.device}', '${d.name || d.device}')" class="btn-secondary">🧪 Tests</button>
+          <button onclick="openDeviceActions('${d.device}', '${d.name || d.device}')" class="btn-info">⚙️ Manage</button>
+          <button onclick="openMirrorWindow('${d.device}', '${d.name || d.device}')" class="btn-warning">📱 Mirror</button>
+        </div>
       </td>
     `;
         tbody.appendChild(row);
@@ -267,6 +663,711 @@
     let currentTestDevice = null;
     let availableTests = [];
     
+    // Screenshot toggle functionality
+    let screenshotsEnabled = localStorage.getItem('screenshotsEnabled') !== 'false'; // default true
+
+    function toggleScreenshots() {
+      screenshotsEnabled = !screenshotsEnabled;
+      localStorage.setItem('screenshotsEnabled', screenshotsEnabled);
+      updateScreenshotVisibility();
+      updateToggleButton();
+    }
+
+    function updateScreenshotVisibility() {
+      // Force table refresh when screenshot state changes
+      // This triggers conditional rendering in updateTable()
+      const currentDevices = document.querySelector('#deviceTable tbody').children.length;
+      if (currentDevices > 0) {
+        // Trigger a fresh render of the table to apply screenshot changes
+        const event = new CustomEvent('screenshotToggleChanged');
+        document.dispatchEvent(event);
+      }
+      
+      // Also update column header visibility
+      const header = document.getElementById('screenshotHeader');
+      if (header) {
+        if (screenshotsEnabled) {
+          header.classList.remove('screenshot-column-hidden');
+        } else {
+          header.classList.add('screenshot-column-hidden');
+        }
+      }
+    }
+
+    function updateToggleButton() {
+      const button = document.getElementById('screenshotToggle');
+      if (screenshotsEnabled) {
+        button.textContent = '📷 Screenshots ON';
+        button.classList.remove('disabled');
+        button.style.background = '#28a745';
+      } else {
+        button.textContent = '📷 Screenshots OFF';
+        button.classList.add('disabled');
+        button.style.background = '#6c757d';
+      }
+    }
+
+    // Initialize screenshot visibility on page load
+    function initializeScreenshots() {
+      updateScreenshotVisibility();
+      updateToggleButton();
+      
+      // Listen for screenshot toggle changes to refresh table
+      document.addEventListener('screenshotToggleChanged', () => {
+        // Re-fetch and render data to apply screenshot changes
+        fetchStatus();
+      });
+    }
+
+    // Device Actions Functions
+    function openDeviceActions(deviceId, deviceName) {
+      document.getElementById('actionDeviceName').textContent = `${deviceName} (${deviceId.split(':')[0]})`;
+      document.getElementById('currentActionDevice').value = deviceId;
+      document.getElementById('deviceActionsModal').style.display = 'block';
+    }
+
+    function closeDeviceActions() {
+      document.getElementById('deviceActionsModal').style.display = 'none';
+    }
+
+    async function runDeviceAction(action) {
+      const deviceId = document.getElementById('currentActionDevice').value;
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = 'Running...';
+      
+      try {
+        const response = await fetch(`/device/${encodeURIComponent(deviceId)}/${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${result.message}`);
+          if (action === 'reboot') {
+            alert('📱 Device is rebooting. It may take 1-2 minutes to reconnect.');
+          }
+          
+          // Auto-refresh status after device action
+          setTimeout(() => {
+            fetchStatus();
+          }, 1000);
+        } else {
+          alert(`❌ Error: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+        
+        // Also refresh after button is re-enabled
+        fetchStatus();
+      }
+    }
+
+    async function runBatchAction(action) {
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      if (!confirm(`Run ${action} on ALL connected devices? This cannot be undone.`)) {
+        return;
+      }
+      
+      button.disabled = true;
+      button.textContent = '🔄 Processing...';
+      
+      try {
+        const response = await fetch(`/devices/batch/${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          const successCount = result.results.filter(r => r.success).length;
+          const totalCount = result.devicesProcessed;
+          
+          let message = `✅ Batch ${action} completed!\n`;
+          message += `📊 Success: ${successCount}/${totalCount} devices\n\n`;
+          
+          result.results.forEach(r => {
+            const status = r.success ? '✅' : '❌';
+            const deviceName = r.deviceId.split(':')[0];
+            message += `${status} ${deviceName}: ${r.success ? 'Success' : r.error}\n`;
+          });
+          
+          alert(message);
+          
+          if (action === 'reboot') {
+            alert('📱 Devices are rebooting. They may take 1-2 minutes to reconnect.');
+          }
+          
+          // Auto-refresh status after batch operation
+          setTimeout(() => {
+            fetchStatus();
+          }, 1000);
+        } else {
+          alert(`❌ Batch operation failed: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+        
+        // Also refresh after button is re-enabled
+        fetchStatus();
+      }
+    }
+
+    // Device Management Functions
+    async function scanDevices() {
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = '🔍 Scanning...';
+      
+      try {
+        const response = await fetch('/devices/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          let message = `🔍 Device Scan Completed!\n\n`;
+          message += `📊 Found ${result.newDevices.length} new devices\n`;
+          message += `📱 Total devices: ${result.totalDevices}\n\n`;
+          
+          if (result.newDevices.length > 0) {
+            message += `New devices added:\n`;
+            result.newDevices.forEach(device => {
+              const deviceName = device.deviceId.split(':')[0];
+              message += `• ${deviceName} (MAC: ${device.mac || 'Unknown'})\n`;
+            });
+          }
+          
+          alert(message);
+          
+          // Refresh status to show new devices
+          setTimeout(() => {
+            fetchStatus();
+          }, 500);
+        } else {
+          alert(`❌ Device scan failed: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Scan failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    async function updateDeviceStatus() {
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = '🔄 Updating...';
+      
+      try {
+        const response = await fetch('/devices/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          let message = `🔄 Device Status Updated!\n\n`;
+          message += `📊 Total devices: ${result.summary.total}\n`;
+          message += `🟢 Online: ${result.summary.online}\n`;
+          message += `🔴 Offline: ${result.summary.offline}\n`;
+          
+          alert(message);
+          
+          // Refresh main table
+          setTimeout(() => {
+            fetchStatus();
+          }, 500);
+        } else {
+          alert(`❌ Status update failed: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Update failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    async function showDeviceList() {
+      try {
+        const response = await fetch('/devices/list');
+        const result = await response.json();
+        
+        if (response.ok) {
+          const modal = document.getElementById('deviceManagementModal');
+          const tableBody = document.getElementById('deviceTableBody');
+          
+          // Clear existing content
+          tableBody.innerHTML = '';
+          
+          if (result.devices.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">No devices found. Click "Scan New Devices" to add devices.</td></tr>';
+          } else {
+            result.devices.forEach(device => {
+              const deviceName = device.deviceId.split(':')[0];
+              const statusClass = device.status === 'online' ? 'device-status-online' : 'device-status-offline';
+              const statusIcon = device.status === 'online' ? '🟢' : '🔴';
+              const lastSeen = device.lastSeen ? new Date(device.lastSeen).toLocaleString() : 'Never';
+              
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${statusIcon}</td>
+                <td><strong>${deviceName}</strong></td>
+                <td><span class="${statusClass}">${device.status.toUpperCase()}</span></td>
+                <td><code>${device.deviceId}</code></td>
+                <td><code>${device.mac || 'Unknown'}</code></td>
+                <td>
+                  <input type="text" class="box-input" placeholder="Box Name" 
+                         value="${device.boxName || ''}" 
+                         data-device="${device.deviceId}" 
+                         data-field="box">
+                </td>
+                <td>
+                  <input type="text" class="unity-input" placeholder="License" 
+                         value="${device.unityLicense || ''}" 
+                         data-device="${device.deviceId}" 
+                         data-field="license">
+                </td>
+                <td>
+                  <input type="email" class="unity-input" placeholder="Email" 
+                         value="${device.unityEmail || ''}" 
+                         data-device="${device.deviceId}" 
+                         data-field="email">
+                </td>
+                <td><small>${lastSeen}</small></td>
+                <td>
+                  <button class="save-unity-btn" onclick="saveUnityData('${device.deviceId}', this)">💾</button>
+                </td>
+              `;
+              tableBody.appendChild(row);
+            });
+          }
+          
+          modal.style.display = 'block';
+        } else {
+          alert(`❌ Failed to get device list: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Failed: ${error.message}`);
+      }
+    }
+
+    async function showMissingDevices() {
+      try {
+        const response = await fetch('/devices/missing');
+        const result = await response.json();
+        
+        if (response.ok) {
+          let message = `❌ Missing/Offline Devices\n\n`;
+          
+          if (result.missingDevices.length === 0) {
+            message += `✅ All registered devices are online!`;
+          } else {
+            message += `Found ${result.count} offline devices:\n\n`;
+            result.missingDevices.forEach(device => {
+              const deviceName = device.deviceId.split(':')[0];
+              message += `🔴 ${deviceName}\n`;
+              message += `   Device ID: ${device.deviceId}\n`;
+              message += `   MAC: ${device.mac || 'Unknown'}\n`;
+              message += `   Last Seen: ${device.lastSeen ? new Date(device.lastSeen).toLocaleString() : 'Never'}\n\n`;
+            });
+          }
+          
+          alert(message);
+        } else {
+          alert(`❌ Failed to get missing devices: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Failed: ${error.message}`);
+      }
+    }
+
+    async function showGroupedDevices() {
+      try {
+        const response = await fetch('/devices/grouped');
+        const grouped = await response.json();
+        
+        if (response.ok) {
+          const modal = document.getElementById('deviceManagementModal');
+          const tableBody = modal.querySelector('#deviceTableBody');
+          
+          tableBody.innerHTML = ''; // Clear existing rows
+          
+          if (Object.keys(grouped).length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">No devices found. Click "Scan New Devices" to add devices.</td></tr>';
+          } else {
+            // Sort boxes by name
+            const sortedBoxNames = Object.keys(grouped).sort((a, b) => {
+              if (a === 'Unassigned') return 1;
+              if (b === 'Unassigned') return -1;
+              return a.localeCompare(b);
+            });
+            
+            sortedBoxNames.forEach(boxName => {
+              const devices = grouped[boxName];
+              
+              // Add box header row
+              const boxHeaderRow = document.createElement('tr');
+              boxHeaderRow.className = 'box-header-row';
+              boxHeaderRow.innerHTML = `
+                <td colspan="10" style="background-color: #f0f0f0; font-weight: bold; padding: 10px; border-top: 2px solid #007bff;">
+                  📦 ${boxName} (${devices.length} devices)
+                </td>
+              `;
+              tableBody.appendChild(boxHeaderRow);
+              
+              // Add devices for this box
+              devices.forEach(device => {
+                const deviceName = device.deviceId.includes(':') ? 
+                  device.deviceId.split(':')[0] : device.deviceId;
+                const statusClass = device.status === 'online' ? 'status-online' : 'status-offline';
+                const statusIcon = device.status === 'online' ? '🟢' : '🔴';
+                const lastSeen = device.lastSeen ? 
+                  new Date(device.lastSeen).toLocaleString() : 'Never';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                  <td>${statusIcon}</td>
+                  <td><strong>${deviceName}</strong></td>
+                  <td><span class="${statusClass}">${device.status.toUpperCase()}</span></td>
+                  <td><code>${device.deviceId}</code></td>
+                  <td><code>${device.mac || 'Unknown'}</code></td>
+                  <td>
+                    <input type="text" class="box-input" placeholder="Box Name" 
+                           value="${device.boxName || ''}" 
+                           data-device="${device.deviceId}" 
+                           data-field="box">
+                  </td>
+                  <td>
+                    <input type="text" class="unity-input" placeholder="License" 
+                           value="${device.unityLicense || ''}" 
+                           data-device="${device.deviceId}" 
+                           data-field="license">
+                  </td>
+                  <td>
+                    <input type="email" class="unity-input" placeholder="Email" 
+                           value="${device.unityEmail || ''}" 
+                           data-device="${device.deviceId}" 
+                           data-field="email">
+                  </td>
+                  <td><small>${lastSeen}</small></td>
+                  <td>
+                    <button class="save-unity-btn" onclick="saveUnityData('${device.deviceId}', this)">💾</button>
+                  </td>
+                `;
+                tableBody.appendChild(row);
+              });
+            });
+          }
+          
+          modal.style.display = 'block';
+        } else {
+          alert(`❌ Failed to get grouped devices: ${grouped.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Failed: ${error.message}`);
+      }
+    }
+
+    // Device Management Modal Functions
+    function closeDeviceManagement() {
+      document.getElementById('deviceManagementModal').style.display = 'none';
+    }
+
+    async function saveUnityData(deviceId, buttonElement) {
+      const licenseInput = document.querySelector(`input[data-device="${deviceId}"][data-field="license"]`);
+      const emailInput = document.querySelector(`input[data-device="${deviceId}"][data-field="email"]`);
+      const boxInput = document.querySelector(`input[data-device="${deviceId}"][data-field="box"]`);
+      
+      const unityLicense = licenseInput ? licenseInput.value.trim() : '';
+      const unityEmail = emailInput ? emailInput.value.trim() : '';
+      const boxName = boxInput ? boxInput.value.trim() : '';
+      
+      if (!unityLicense && !unityEmail && !boxName) {
+        alert('Please enter at least a license, email, or box name');
+        return;
+      }
+      
+      try {
+        // Use bulk update API
+        const updates = [{
+          deviceId: deviceId,
+          unityLicense: unityLicense || undefined,
+          unityEmail: unityEmail || undefined,
+          boxName: boxName || undefined
+        }];
+        
+        const response = await fetch('/devices/bulk-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || `Server error: ${response.status}`);
+        }
+        
+        // Visual feedback
+        const saveBtn = buttonElement || event?.target;
+        if (saveBtn) {
+          const originalText = saveBtn.textContent;
+          saveBtn.textContent = '✅';
+          saveBtn.style.background = '#28a745';
+          
+          setTimeout(() => {
+            saveBtn.textContent = originalText;
+            saveBtn.style.background = '#28a745';
+          }, 2000);
+        }
+        
+        console.log('Save success:', result);
+        alert('✅ Data saved successfully!');
+      } catch (error) {
+        console.error('Save error:', error);
+        alert(`❌ Save failed: ${error.message}`);
+      }
+    }
+
+    async function saveAllData() {
+      const modal = document.getElementById('deviceManagementModal');
+      if (!modal) return;
+      
+      // Collect all input data
+      const updates = [];
+      const licenseInputs = modal.querySelectorAll('input[data-field="license"]');
+      const emailInputs = modal.querySelectorAll('input[data-field="email"]');
+      const boxInputs = modal.querySelectorAll('input[data-field="box"]');
+      
+      // Create a map of deviceId to data
+      const deviceData = {};
+      
+      licenseInputs.forEach(input => {
+        const deviceId = input.getAttribute('data-device');
+        const value = input.value.trim();
+        if (!deviceData[deviceId]) deviceData[deviceId] = {};
+        if (value) deviceData[deviceId].unityLicense = value;
+      });
+      
+      emailInputs.forEach(input => {
+        const deviceId = input.getAttribute('data-device');
+        const value = input.value.trim();
+        if (!deviceData[deviceId]) deviceData[deviceId] = {};
+        if (value) deviceData[deviceId].unityEmail = value;
+      });
+      
+      boxInputs.forEach(input => {
+        const deviceId = input.getAttribute('data-device');
+        const value = input.value.trim();
+        if (!deviceData[deviceId]) deviceData[deviceId] = {};
+        if (value) deviceData[deviceId].boxName = value;
+      });
+      
+      // Convert to updates array
+      Object.entries(deviceData).forEach(([deviceId, data]) => {
+        if (Object.keys(data).length > 0) {
+          updates.push({ deviceId, ...data });
+        }
+      });
+      
+      if (updates.length === 0) {
+        alert('No data to save');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/devices/bulk-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates })
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || `Server error: ${response.status}`);
+        }
+        
+        alert(`✅ Successfully updated ${result.updatedCount} out of ${result.totalRequested} devices!`);
+        
+        // Refresh the table
+        setTimeout(() => {
+          showDeviceList();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Bulk save error:', error);
+        alert(`❌ Bulk save failed: ${error.message}`);
+      }
+    }
+
+    function downloadCSV() {
+      window.open('/devices/download', '_blank');
+    }
+
+    async function refreshDeviceTable() {
+      await showDeviceList(); // Reload the table
+    }
+
+    // CXT Box Management Functions
+    async function connectCXTBoxes() {
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = '📦 Connecting...';
+      
+      try {
+        const response = await fetch('/boxes/connect-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`📦 CXT Boxes Connection Result:\n\n${result.message}\nConnected boxes: ${result.connectedBoxes.join(', ') || 'None'}`);
+          
+          // Refresh device table to update box names
+          setTimeout(() => {
+            refreshDeviceTable();
+          }, 1000);
+        } else {
+          alert(`❌ Failed to connect to CXT boxes: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Connection failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    async function showCXTBoxStatus() {
+      try {
+        const response = await fetch('/boxes/status');
+        const result = await response.json();
+        
+        if (response.ok) {
+          let message = `📦 CXT Box Status\n\n`;
+          
+          if (Object.keys(result).length === 0) {
+            message += `No CXT boxes configured.`;
+          } else {
+            Object.entries(result).forEach(([name, status]) => {
+              const connectionIcon = status.connected ? '🟢' : '🔴';
+              message += `${connectionIcon} ${name}\n`;
+              message += `   Host: ${status.host}:${status.port}\n`;
+              message += `   Connected: ${status.connected ? 'Yes' : 'No'}\n`;
+              message += `   Devices: ${status.deviceCount}\n\n`;
+            });
+          }
+          
+          alert(message);
+        } else {
+          alert(`❌ Failed to get box status: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Failed: ${error.message}`);
+      }
+    }
+
+    async function scanBoxes() {
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = '🔍 Scanning...';
+      
+      try {
+        // Show scan settings dialog
+        const ipRange = prompt('Enter IP range (e.g., 192.168.44):', '192.168.44') || '192.168.44';
+        const startIP = parseInt(prompt('Enter start IP (e.g., 1):', '1') || '1');
+        const endIP = parseInt(prompt('Enter end IP (e.g., 50):', '50') || '50');
+        const port = parseInt(prompt('Enter port (default 22223):', '22223') || '22223');
+        
+        const response = await fetch('/boxes/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ipRange, startIP, endIP, port })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          let message = `📦 Box Scan Completed!\n\n`;
+          message += `📊 Found ${result.foundBoxes.length} CXT boxes\n`;
+          message += `🔍 Scan range: ${ipRange}.${startIP}-${endIP}:${port}\n\n`;
+          
+          if (result.foundBoxes.length > 0) {
+            message += `Boxes discovered:\n`;
+            result.foundBoxes.forEach(box => {
+              message += `• ${box.name} at ${box.host}:${box.port}\n`;
+            });
+            message += `\n💡 Use 'Connect All' to establish connections.`;
+          } else {
+            message += `No CXT boxes found in this range.\n`;
+            message += `Try adjusting the IP range or check box connectivity.`;
+          }
+          
+          alert(message);
+        } else {
+          alert(`❌ Failed to scan boxes: ${result.error}`);
+        }
+      } catch (error) {
+        alert(`❌ Scan failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    function connectAllBoxes() {
+      connectCXTBoxes();
+    }
+
+    function showBoxStatus() {
+      showCXTBoxStatus();
+    }
+
+    function showBoxSettings() {
+      let message = `📦 CXT PhoneFarm Box Settings\n\n`;
+      message += `📋 Configuration:\n`;
+      message += `• Default Port: 22223\n`;
+      message += `• WebSocket Protocol\n`;
+      message += `• Auto-reconnect: Enabled\n\n`;
+      message += `🔧 Available Actions:\n`;
+      message += `• Scan Boxes: Discover boxes in IP range\n`;
+      message += `• Connect All: Connect to discovered boxes\n`;
+      message += `• Box Status: View connection status\n\n`;
+      message += `💡 CXT PhoneFarm boxes must be on the same network.`;
+      
+      alert(message);
+    }
+
     // Load available tests on page load
     async function loadUITests() {
       try {
@@ -278,6 +1379,22 @@
       }
     }
     
+    // Open screenshot modal
+    function openScreenshotModal(deviceId, deviceName) {
+      const modal = document.getElementById('screenshotModal');
+      const modalImg = document.getElementById('modalScreenshot');
+      const caption = document.getElementById('screenshotCaption');
+      
+      modal.style.display = 'block';
+      modalImg.src = `/screenshot/${deviceId}?t=${Date.now()}`; // Add timestamp to prevent caching
+      caption.textContent = `Screenshot of ${deviceName} (${deviceId.split(':')[0]})`;
+    }
+
+    // Close screenshot modal
+    function closeScreenshotModal() {
+      document.getElementById('screenshotModal').style.display = 'none';
+    }
+
     // Open test window for specific device
     function openTestWindow(deviceId, deviceName) {
       currentTestDevice = deviceId;
@@ -336,12 +1453,399 @@
       }
     }
 
+    // Mirror functionality
+    let currentMirrorDevice = null;
+    let mirrorScreenSize = { width: 1080, height: 1920 };
+    let mirrorRefreshInterval = null;
+    let mirrorWebSocket = null;
+    let useScrcpyStream = true; // Try scrcpy first, fallback to screenshots
+    
+    async function openMirrorWindow(deviceId, deviceName) {
+      currentMirrorDevice = deviceId;
+      document.getElementById('mirrorCaption').textContent = `Mirror: ${deviceName}`;
+      
+      // Get device screen size
+      try {
+        const sizeRes = await fetch(`http://localhost:3000/mirror/${encodeURIComponent(deviceId)}/screen-size`);
+        if (sizeRes.ok) {
+          mirrorScreenSize = await sizeRes.json();
+        }
+      } catch (err) {
+        console.log('Using default screen size');
+      }
+      
+      // Show modal
+      document.getElementById('mirrorModal').style.display = 'block';
+      
+      // Try to start scrcpy stream
+      if (useScrcpyStream) {
+        startScrcpyStream(deviceId, deviceName);
+      } else {
+        startScreenshotMode(deviceId);
+      }
+    }
+    
+    function startScrcpyStream(deviceId, deviceName) {
+      const statusEl = document.getElementById('streamStatus');
+      const videoEl = document.getElementById('mirrorVideo');
+      const imgEl = document.getElementById('mirrorScreen');
+      
+      statusEl.textContent = 'Connecting to stream...';
+      
+      // Create WebSocket connection for scrcpy stream
+      const wsUrl = `ws://localhost:3000?device=${encodeURIComponent(deviceId)}`;
+      mirrorWebSocket = new WebSocket(wsUrl);
+      
+      mirrorWebSocket.onopen = () => {
+        statusEl.textContent = 'Stream connected';
+        setTimeout(() => statusEl.style.display = 'none', 2000);
+      };
+      
+      mirrorWebSocket.onmessage = (event) => {
+        // Receive screenshot data and create image URL
+        const imageBlob = new Blob([event.data], { type: 'image/png' });
+        const imageUrl = URL.createObjectURL(imageBlob);
+        
+        // Update image source for smooth streaming
+        imgEl.src = imageUrl;
+        imgEl.style.display = 'block';
+        videoEl.style.display = 'none';
+        
+        // Clean up old URL
+        setTimeout(() => URL.revokeObjectURL(imageUrl), 500);
+      };
+      
+      mirrorWebSocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        statusEl.textContent = 'Stream failed, using screenshots';
+        useScrcpyStream = false;
+        startScreenshotMode(deviceId);
+      };
+      
+      mirrorWebSocket.onclose = () => {
+        statusEl.textContent = 'Stream disconnected';
+      };
+    }
+    
+    function startScreenshotMode(deviceId) {
+      const videoEl = document.getElementById('mirrorVideo');
+      const imgEl = document.getElementById('mirrorScreen');
+      const statusEl = document.getElementById('streamStatus');
+      
+      // Show image element, hide video
+      videoEl.style.display = 'none';
+      imgEl.style.display = 'block';
+      statusEl.textContent = 'Screenshot mode';
+      
+      refreshMirrorScreen();
+      // Auto-refresh every 1 second for better responsiveness
+      mirrorRefreshInterval = setInterval(refreshMirrorScreen, 1000);
+      
+      setTimeout(() => statusEl.style.display = 'none', 2000);
+    }
+    
+    function closeMirrorWindow() {
+      document.getElementById('mirrorModal').style.display = 'none';
+      currentMirrorDevice = null;
+      
+      // Close WebSocket connection
+      if (mirrorWebSocket) {
+        mirrorWebSocket.close();
+        mirrorWebSocket = null;
+      }
+      
+      // Stop screenshot interval
+      if (mirrorRefreshInterval) {
+        clearInterval(mirrorRefreshInterval);
+        mirrorRefreshInterval = null;
+      }
+      
+      // Reset UI elements
+      const videoEl = document.getElementById('mirrorVideo');
+      const imgEl = document.getElementById('mirrorScreen');
+      const statusEl = document.getElementById('streamStatus');
+      
+      videoEl.style.display = 'none';
+      imgEl.style.display = 'block';
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'Connecting...';
+      
+      // Reset scrcpy usage preference
+      useScrcpyStream = true;
+    }
+    
+    function refreshMirrorScreen() {
+      if (!currentMirrorDevice) return;
+      
+      const img = document.getElementById('mirrorScreen');
+      img.src = `/screenshot/${encodeURIComponent(currentMirrorDevice)}?t=${Date.now()}`;
+    }
+    
+    function toggleMirrorControls() {
+      const controls = document.getElementById('mirrorControls');
+      controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    // Initialize mirror screen event listener
+    function initializeMirrorEvents() {
+      const mirrorScreen = document.getElementById('mirrorScreen');
+      const mirrorVideo = document.getElementById('mirrorVideo');
+      
+      // Touch handler function
+      async function handleTouch(e, element) {
+        if (!currentMirrorDevice) return;
+        
+        const rect = element.getBoundingClientRect();
+        
+        // Calculate relative position
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Scale to actual device coordinates
+        const scaleX = mirrorScreenSize.width / element.clientWidth;
+        const scaleY = mirrorScreenSize.height / element.clientHeight;
+        
+        const deviceX = Math.round(x * scaleX);
+        const deviceY = Math.round(y * scaleY);
+        
+        // Show touch point animation
+        showTouchPoint(x, y);
+        
+        // Send tap to device
+        try {
+          await fetch(`http://localhost:3000/mirror/${encodeURIComponent(currentMirrorDevice)}/tap`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ x: deviceX, y: deviceY })
+          });
+          
+          // Refresh screen immediately after tap for instant feedback (only for screenshot mode)
+          if (!mirrorWebSocket || mirrorWebSocket.readyState !== WebSocket.OPEN) {
+            setTimeout(refreshMirrorScreen, 100);
+          }
+        } catch (err) {
+          console.error('Failed to send tap:', err);
+        }
+      }
+      
+      // Add event listeners for both image and video elements
+      if (mirrorScreen) {
+        mirrorScreen.addEventListener('click', (e) => handleTouch(e, mirrorScreen));
+      }
+      
+      if (mirrorVideo) {
+        mirrorVideo.addEventListener('click', (e) => handleTouch(e, mirrorVideo));
+      }
+    }
+    
+    function showTouchPoint(x, y) {
+      const touchPoint = document.getElementById('mirrorTouchPoint');
+      const img = document.getElementById('mirrorScreen');
+      const rect = img.getBoundingClientRect();
+      
+      touchPoint.style.left = (x - 10) + 'px';
+      touchPoint.style.top = (y - 10) + 'px';
+      touchPoint.style.display = 'block';
+      
+      setTimeout(() => {
+        touchPoint.style.display = 'none';
+      }, 300);
+    }
+    
+    async function sendKeyEvent(keycode) {
+      if (!currentMirrorDevice) return;
+      
+      try {
+        await fetch(`http://localhost:3000/mirror/${encodeURIComponent(currentMirrorDevice)}/key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keycode })
+        });
+        
+        // Refresh screen immediately after key event
+        setTimeout(refreshMirrorScreen, 100);
+      } catch (err) {
+        console.error('Failed to send key event:', err);
+      }
+    }
+    
+    async function sendTextInput() {
+      const textInput = document.getElementById('textInput');
+      const text = textInput.value.trim();
+      
+      if (!text || !currentMirrorDevice) return;
+      
+      try {
+        await fetch(`http://localhost:3000/mirror/${encodeURIComponent(currentMirrorDevice)}/text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        
+        textInput.value = '';
+        setTimeout(refreshMirrorScreen, 100);
+      } catch (err) {
+        console.error('Failed to send text:', err);
+      }
+    }
+
     // Initial fetch and periodic refresh
     fetchStatus();
     setInterval(fetchStatus, REFRESH_INTERVAL * 1000);
     startCountdown();
     loadUITests();
+    initializeScreenshots();
+    initializeMirrorEvents();
   </script>
+
+  <!-- Screenshot Modal -->
+  <div id="screenshotModal" class="screenshot-modal" onclick="closeScreenshotModal()">
+    <div class="screenshot-modal-content" onclick="event.stopPropagation()">
+      <span class="screenshot-close" onclick="closeScreenshotModal()">&times;</span>
+      <h3 id="screenshotCaption">Device Screenshot</h3>
+      <img id="modalScreenshot" src="" alt="Device Screenshot">
+      <br><br>
+      <button onclick="document.getElementById('modalScreenshot').src = document.getElementById('modalScreenshot').src.split('?')[0] + '?t=' + Date.now()">Refresh Screenshot</button>
+    </div>
+  </div>
+
+  <!-- Device Actions Modal -->
+  <div id="deviceActionsModal" class="device-actions-modal" onclick="closeDeviceActions()">
+    <div class="device-actions-content" onclick="event.stopPropagation()">
+      <div class="device-actions-header">
+        <h2 id="actionDeviceName">Device Management</h2>
+        <span class="screenshot-close" onclick="closeDeviceActions()">&times;</span>
+      </div>
+      
+      <input type="hidden" id="currentActionDevice" value="">
+      
+      <div class="action-grid">
+        <div class="action-card">
+          <h4>🔋 Battery Control</h4>
+          <p>Set battery level and manage power</p>
+          <button onclick="runDeviceAction('battery-100')" class="btn-info">Set 100%</button>
+          <button onclick="runDeviceAction('battery-reset')" class="btn-secondary">Reset</button>
+        </div>
+        
+        <div class="action-card">
+          <h4>🎮 Unity App</h4>
+          <p>Control Unity application lifecycle</p>
+          <button onclick="runDeviceAction('unity-stop')" class="btn-warning">Stop App</button>
+          <button onclick="runDeviceAction('unity-restart')" class="btn-primary">Restart App</button>
+        </div>
+        
+        <div class="action-card">
+          <h4>📱 Display Settings</h4>
+          <p>Standardize screen resolution (1080x2220)</p>
+          <button onclick="runDeviceAction('set-resolution')" class="btn-info">Set Resolution</button>
+        </div>
+        
+        <div class="action-card">
+          <h4>⚡ System Control</h4>
+          <p>Reboot device or uninstall app</p>
+          <button onclick="runDeviceAction('reboot')" class="btn-danger">Reboot Device</button>
+          <button onclick="runDeviceAction('uninstall-unity')" class="btn-danger">Uninstall Unity</button>
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 13px;">⚠️ These actions will be executed immediately on the selected device</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mirror Modal -->
+  <div id="mirrorModal" class="screenshot-modal" onclick="closeMirrorWindow()">
+    <div class="screenshot-modal-content" onclick="event.stopPropagation()" style="max-width: 90%; max-height: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+        <h3 id="mirrorCaption">Device Mirror</h3>
+        <div>
+          <button onclick="refreshMirrorScreen()" class="btn-primary" style="margin-right: 10px;">🔄 Refresh</button>
+          <button onclick="toggleMirrorControls()" class="btn-secondary" style="margin-right: 10px;">⌨️ Controls</button>
+          <span class="screenshot-close" onclick="closeMirrorWindow()">&times;</span>
+        </div>
+      </div>
+      
+      <div style="position: relative; display: inline-block;">
+        <video id="mirrorVideo" autoplay muted style="max-width: 100%; max-height: 70vh; cursor: crosshair; border: 2px solid #ddd; border-radius: 5px; display: none;"></video>
+        <img id="mirrorScreen" src="" alt="Device Screen" style="max-width: 100%; max-height: 70vh; cursor: crosshair; border: 2px solid #ddd; border-radius: 5px;">
+        <div id="mirrorTouchPoint" style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: rgba(255, 0, 0, 0.6); pointer-events: none; display: none;"></div>
+        <div id="streamStatus" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 3px; font-size: 12px;">Connecting...</div>
+      </div>
+      
+      <div id="mirrorControls" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 5px; display: none;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+          <button onclick="sendKeyEvent(4)" class="btn-secondary">← Back</button>
+          <button onclick="sendKeyEvent(3)" class="btn-secondary">🏠 Home</button>
+          <button onclick="sendKeyEvent(187)" class="btn-secondary">▢ Recent</button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+          <button onclick="sendKeyEvent(24)" class="btn-secondary">🔊 Vol+</button>
+          <button onclick="sendKeyEvent(25)" class="btn-secondary">🔉 Vol-</button>
+          <button onclick="sendKeyEvent(26)" class="btn-secondary">⚡ Power</button>
+          <button onclick="sendKeyEvent(82)" class="btn-secondary">📋 Menu</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="textInput" placeholder="Text to input..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          <button onclick="sendTextInput()" class="btn-primary">Send Text</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Device Management Modal -->
+  <div id="deviceManagementModal" class="device-management-modal" onclick="closeDeviceManagement()">
+    <div class="device-management-content" onclick="event.stopPropagation()">
+      <div class="device-management-header">
+        <h2>📊 Device Management</h2>
+        <button class="device-close-btn" onclick="closeDeviceManagement()">&times;</button>
+      </div>
+      
+      <div class="device-management-controls">
+        <button onclick="refreshDeviceTable()" class="btn-info">🔄 Refresh</button>
+        <button onclick="scanDevices(); setTimeout(refreshDeviceTable, 1000)" class="btn-success">🔍 Scan New</button>
+        <button onclick="updateDeviceStatus(); setTimeout(refreshDeviceTable, 1000)" class="btn-warning">📡 Update Status</button>
+        <button onclick="saveAllData()" class="btn-success" style="font-weight: bold;">💾 Save All Data</button>
+        <button onclick="downloadCSV()" class="btn-secondary">📥 Download CSV</button>
+        <button onclick="connectCXTBoxes()" class="btn-primary">📦 Connect CXT Boxes</button>
+        <button onclick="showCXTBoxStatus()" class="btn-secondary">📊 Box Status</button>
+      </div>
+      
+      <div class="device-table-container">
+        <table class="device-management-table">
+          <thead>
+            <tr>
+              <th>🌐</th>
+              <th>Device</th>
+              <th>Status</th>
+              <th>Device ID</th>
+              <th>MAC Address</th>
+              <th>Box Name</th>
+              <th>Unity License</th>
+              <th>Unity Email</th>
+              <th>Last Seen</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="deviceTableBody">
+            <tr><td colspan="10" style="text-align: center; padding: 20px;">Loading devices...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; color: #666; font-size: 14px;">
+        <strong>💡 Tips:</strong>
+        <ul style="margin: 5px 0; padding-left: 20px;">
+          <li>Enter Unity license codes and emails for automated setup</li>
+          <li>Click 💾 to save Unity data for each device</li>
+          <li>Download CSV to backup your device database</li>
+          <li>Scan regularly to detect new devices on the network</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
 </body>
 
